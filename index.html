@@ -30,13 +30,38 @@
             <img class="tile" id="tile012" src="tile031.png" />
             <img class="tile" id="tile013" src="tile034.png" />
             <img class="tile" id="tile014" src="tile019.png" />
+            <img class="tile" id="tile015" src="tile000b.png" />
+            <img class="tile" id="tile016" src="tile004b.png" />
+            <img class="tile" id="tile017" src="tile005b.png" />
+            <img class="tile" id="tile018" src="tile006b.png" />
+            <img class="tile" id="tile019" src="tile010b.png" />
+            <img class="tile" id="tile020" src="tile013b.png" />
+            <img class="tile" id="tile021" src="tile057.png" />
+            <img class="tile" id="tile022" src="tile036.png" />
+            <img class="tile" id="tile023" src="tile056.png" />
+            <img class="tile" id="tile024" src="tile060.png" />
         </div>
         <div class="inputoutput">
             <div class="caption">canvasOutput</div>
         </div>
+        <div class="canvasMaskDiv">
+            Test
+            <canvas id="canvasMask" width="141" height="141"></canvas>
+            <canvas id="canvasMaskOut"></canvas>
+        </div>
     </div>
     <script type="text/javascript">
         const tileMats = [];
+
+        const canvasMaskElement = document.getElementById('canvasMask');
+        const canvasMaskCtx = canvasMaskElement.getContext('2d');
+        canvasMaskCtx.fillStyle = "#000000";
+        // canvasMaskCtx.fillStyle = "green";
+        canvasMaskCtx.fillRect(0, 0, canvasMaskElement.width, canvasMaskElement.height);
+        canvasMaskCtx.beginPath();
+        canvasMaskCtx.arc(141/2, 141/2, 120/2, 0, 2 * Math.PI);
+        canvasMaskCtx.fillStyle = "#FFFFFF";
+        canvasMaskCtx.fill();
 
         const main = () => {
             const tileImgElements = document.getElementsByClassName("tile");
@@ -52,6 +77,13 @@
                     }
                 }
                 console.log(tileImgElement);
+
+
+
+                const mask = cv.imread('canvasMask');
+                const dst = new cv.Mat();
+                cv.cvtColor(mask, dst, cv.COLOR_RGBA2GRAY);
+                cv.imshow('canvasMaskOut', dst);
             }
         }
 
@@ -66,13 +98,17 @@
                 // for (const tileMat of [tileMats[0], tileMats[7], tileMats[15]]) {
                 // for (const tileMat of [tileMats[1]]) {
                 const dest = new cv.Mat();
+                
+                const canvasMaskMat = cv.imread('canvasMask');
                 const mask = new cv.Mat();
+                cv.cvtColor(canvasMaskMat, mask, cv.COLOR_RGBA2GRAY);
+                // const mask = new cv.Mat();
 
-                // cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_SQDIFF_NORMED, mask);
-                cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_CCOEFF_NORMED, mask);
+                cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_SQDIFF_NORMED, mask);
+                // cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_CCOEFF_NORMED, mask);
 
 
-                const threshold = 0.01;
+                const threshold = 0.002;
                 // console.log(dest);
                 // cv.imshow('canvasOutput', dest);
 
@@ -81,7 +117,7 @@
                 //     ${Math.random() * 255},
                 //     ${Math.random() * 255}
                 // )`;
-                const randomColor = goodColors.pop();
+                const randomColor = goodColors[tileId];
                 canvasCtx.strokeStyle = randomColor;
                 canvasCtx.lineWidth = 10;
                 canvasCtx.fillStyle = randomColor;
@@ -96,8 +132,8 @@
 
                         const value = data[idx];
 
-                        // if (value < threshold) {
-                        if (value > 0.9375) {
+                        if (value < threshold) {
+                        // if (value > 0.95) {
                             const normalizedX = x;
                             const normalizedY = y;
                             matches.push([normalizedX, normalizedY, tileId]);
@@ -105,9 +141,8 @@
                             // console.log([normalizedX, normalizedY, 0]);
 
                             // canvasCtx.beginPath();
-                            // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
+                            // // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
                             // canvasCtx.rect(normalizedX + 12, normalizedY + 12 , 141 - 12, 141 - 12);
-                            // ca
                             // canvasCtx.stroke();
                         }
                     }
@@ -195,8 +230,10 @@
         const inputImgElement = document.getElementById('imageSrc');
         const inputElement = document.getElementById('fileInput');
 
-        const goodColors1 = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
-        const goodColors = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
+        // const goodColors1 = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
+        // const goodColors = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
+        const goodColors = ["rgb(182,156,253)", "rgb(147,201,32)", "rgb(146,46,177)", "rgb(52,245,14)", "rgb(239,106,222)", "rgb(11,109,51)", "rgb(254,22,244)", "rgb(184,241,177)", "rgb(53,0,111)", "rgb(252,209,7)", "rgb(54,14,13)", "rgb(84,215,235)", "rgb(247,48,110)", "rgb(61,255,196)", "rgb(136,52,91)", "rgb(74,177,111)", "rgb(220,60,7)", "rgb(88,162,238)", "rgb(4,44,23)", "rgb(244,223,208)", "rgb(2,58,120)", "rgb(247,147,2)", "rgb(63,22,249)", "rgb(147,164,112)", "rgb(231,128,133)", "rgb(80,99,86)", "rgb(136,60,16)"]
+        const goodColors1 = goodColors;
         const matches = [];
 
 
@@ -489,6 +526,9 @@
 
                     // const result = findPath(grid, pairToFindPath[0], pairToFindPath[1]);
                     console.log(pathablePairs);
+                    for (const pair of pathablePairs) {
+                        console.log(pair);
+                    }
 
                     const solution = findSolution(grid);
                     console.log(solution);
