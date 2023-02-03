@@ -10,6 +10,7 @@
     <h2>Hello OpenCV.js</h2>
     <p id="status">OpenCV.js is loading...</p>
     <div>
+        SOLVE: <input id="solverCheckbox" type="checkbox" checked/>
         <canvas id="canvasOutput" style="width: 100%;"></canvas>
         <div class="inputoutput">
             <img id="imageSrc" alt="No Image" />
@@ -40,6 +41,9 @@
             <img class="tile" id="tile022" src="tile036.png" />
             <img class="tile" id="tile023" src="tile056.png" />
             <img class="tile" id="tile024" src="tile060.png" />
+            <img class="tile" id="tile025" src="tile037c.png" />
+            <img class="tile" id="tile026" src="tile046c.png" />
+            <img class="tile" id="tile027" src="tile060c.png" />
         </div>
         <div class="inputoutput">
             <div class="caption">canvasOutput</div>
@@ -59,7 +63,7 @@
         // canvasMaskCtx.fillStyle = "green";
         canvasMaskCtx.fillRect(0, 0, canvasMaskElement.width, canvasMaskElement.height);
         canvasMaskCtx.beginPath();
-        canvasMaskCtx.arc(141/2, 141/2, 120/2, 0, 2 * Math.PI);
+        canvasMaskCtx.arc(141 / 2, 141 / 2, 120 / 2, 0, 2 * Math.PI);
         canvasMaskCtx.fillStyle = "#FFFFFF";
         canvasMaskCtx.fill();
 
@@ -87,6 +91,21 @@
             }
         }
 
+        function sanityCheckGrid(grid) {
+            const tileIdFreq = {};
+            for (let y = 0; y < grid.length; y++) {
+                for (let x = 0; x < grid[y].length; x++) {
+                    const tileId = grid[y][x];
+                    if (tileIdFreq[tileId] === undefined) {
+                        tileIdFreq[tileId] = 0;
+                    }
+                    tileIdFreq[tileId] += 1;
+                }
+            }
+
+            console.log(tileIdFreq);
+        }
+
         const processImaage = () => {
             const mainImgMat = cv.imread(inputImgElement);
             cv.imshow('canvasOutput', mainImgMat);
@@ -98,7 +117,7 @@
                 // for (const tileMat of [tileMats[0], tileMats[7], tileMats[15]]) {
                 // for (const tileMat of [tileMats[1]]) {
                 const dest = new cv.Mat();
-                
+
                 const canvasMaskMat = cv.imread('canvasMask');
                 const mask = new cv.Mat();
                 cv.cvtColor(canvasMaskMat, mask, cv.COLOR_RGBA2GRAY);
@@ -133,7 +152,7 @@
                         const value = data[idx];
 
                         if (value < threshold) {
-                        // if (value > 0.95) {
+                            // if (value > 0.95) {
                             const normalizedX = x;
                             const normalizedY = y;
                             matches.push([normalizedX, normalizedY, tileId]);
@@ -232,7 +251,49 @@
 
         // const goodColors1 = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
         // const goodColors = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
-        const goodColors = ["rgb(182,156,253)", "rgb(147,201,32)", "rgb(146,46,177)", "rgb(52,245,14)", "rgb(239,106,222)", "rgb(11,109,51)", "rgb(254,22,244)", "rgb(184,241,177)", "rgb(53,0,111)", "rgb(252,209,7)", "rgb(54,14,13)", "rgb(84,215,235)", "rgb(247,48,110)", "rgb(61,255,196)", "rgb(136,52,91)", "rgb(74,177,111)", "rgb(220,60,7)", "rgb(88,162,238)", "rgb(4,44,23)", "rgb(244,223,208)", "rgb(2,58,120)", "rgb(247,147,2)", "rgb(63,22,249)", "rgb(147,164,112)", "rgb(231,128,133)", "rgb(80,99,86)", "rgb(136,60,16)"]
+        // const goodColors = ["rgb(182,156,253)", "rgb(147,201,32)", "rgb(146,46,177)", "rgb(52,245,14)", "rgb(239,106,222)", "rgb(11,109,51)", "rgb(254,22,244)", "rgb(184,241,177)", "rgb(53,0,111)", "rgb(252,209,7)", "rgb(54,14,13)", "rgb(84,215,235)", "rgb(247,48,110)", "rgb(61,255,196)", "rgb(136,52,91)", "rgb(74,177,111)", "rgb(220,60,7)", "rgb(88,162,238)", "rgb(4,44,23)", "rgb(244,223,208)", "rgb(2,58,120)", "rgb(247,147,2)", "rgb(63,22,249)", "rgb(147,164,112)", "rgb(231,128,133)", "rgb(80,99,86)", "rgb(136,60,16)"]
+        const goodColors = [
+            "#000000",
+            "#a9a9a9",
+            "#2f4f4f",
+            "#556b2f",
+            "#a0522d",
+            "#191970",
+            "#006400",
+            "#8b0000",
+            "#808000",
+            "#008b8b",
+            "#4682b4",
+            "#9acd32",
+            "#00008b",
+            "#daa520",
+            "#8fbc8f",
+            "#8b008b",
+            "#b03060",
+            "#ff4500",
+            "#ff8c00",
+            "#6a5acd",
+            "#0000cd",
+            "#7cfc00",
+            "#00ff7f",
+            "#dc143c",
+            "#00ffff",
+            "#f4a460",
+            "#a020f0",
+            "#da70d6",
+            "#ff00ff",
+            "#1e90ff",
+            "#f0e68c",
+            "#fa8072",
+            "#ffff54",
+            "#dda0dd",
+            "#90ee90",
+            "#ff1493",
+            "#87cefa",
+            "#ffdab9",
+            "#e0ffff",
+            "#ffb6c1"
+        ]
         const goodColors1 = goodColors;
         const matches = [];
 
@@ -266,7 +327,7 @@
             const bufferedGrid = [];
             bufferedGrid.push([...new Array(grid[0].length + 2)].map(_ => -1))
             for (let y = 0; y < grid.length; y++) {
-                bufferedGrid.push([-1, ... grid[y], -1]);
+                bufferedGrid.push([-1, ...grid[y], -1]);
             }
             bufferedGrid.push([...new Array(grid[0].length + 2)].map(_ => -1))
 
@@ -274,7 +335,7 @@
             // console.log(bufferedGrid);
 
             const fixedStart = [start[0] + 1, start[1] + 1];
-            const fixedEnd   = [end[0] + 1  , end[1] + 1];
+            const fixedEnd = [end[0] + 1, end[1] + 1];
             const path = [fixedStart];
             const result = findPathHelper(bufferedGrid, fixedStart, fixedEnd, path, 0);
 
@@ -286,7 +347,7 @@
             if (turnCount > 2) {
                 return false;
             }
-            
+
             const [currentX, currentY] = current;
             const [endX, endY] = end;
 
@@ -300,8 +361,8 @@
             if (path.length > 1 && currentId !== -1) {
                 return false;
             }
-            
-            
+
+
             const deltas = [
                 [1, 0],
                 [-1, 0],
@@ -317,7 +378,7 @@
                     const currentDelta = [currentX - previous[0], currentY - previous[1]];
                     turning = !(delta[0] === currentDelta[0] && delta[1] === currentDelta[1]);
                 }
-                
+
                 const newCurrent = [currentX + delta[0], currentY + delta[1]];
                 if (newCurrent[0] < 0 || newCurrent[0] >= grid[0].length) {
                     continue;
@@ -339,7 +400,7 @@
         function createGridCopy(grid) {
             return [...grid.map(row => [...row])];
         }
-        
+
         function gridIsSolved(grid) {
             for (let y = 0; y < grid.length; y++) {
                 for (let x = 0; x < grid[y].length; x++) {
@@ -359,13 +420,14 @@
         }
 
         function findSolutionHelper(grid, matches) {
+            console.log(matches);
             if (gridIsSolved(grid)) {
                 return true;
             }
 
             const pairs = findAllPairs(grid);
             // console.log(pairs);
-            
+
             const matchablePairs = pairs.filter(pair => {
                 return findPath(grid, pair[0], pair[1]) !== undefined;
             })
@@ -374,13 +436,26 @@
                 return false;
             }
 
-            for (const pair of matchablePairs) {
+            const scoredMatchablePairs = matchablePairs.map(pair => {
                 const [tile0x, tile0y] = pair[0];
                 const [tile1x, tile1y] = pair[1];
 
                 const newGrid = createGridCopy(grid);
                 newGrid[tile0y][tile0x] = -1;
                 newGrid[tile1y][tile1x] = -1;
+
+                const score = findAllPairs(newGrid)
+                    .filter(pair => {
+                        return findPath(grid, pair[0], pair[1]) !== undefined;
+                    })
+                    .length;
+                
+                return [pair, newGrid, score]
+            });
+
+            scoredMatchablePairs.sort((p1, p2) => p2[2] - p1[2]);
+
+            for (const [pair, newGrid, score] of scoredMatchablePairs) {
 
                 matches.push(pair);
                 if (findSolutionHelper(newGrid, matches)) {
@@ -491,70 +566,75 @@
 
                     const grid = processImaage();
 
-                    const minX = 93;
-                    const minY = 343;
-                    const tileSize = 141;
-                    for (let y = 0; y < grid.length; y++) {
-                        for (let x = 0; x < grid[y].length; x++) {
-                            const id = grid[y][x];
-                            if (id < 0) { continue; }
+                    sanityCheckGrid(grid);
+                    const skipFindSolution = !document.getElementById('solverCheckbox').checked;
+                    if (!skipFindSolution) {
+                        const minX = 93;
+                        const minY = 343;
+                        const tileSize = 141;
+                        for (let y = 0; y < grid.length; y++) {
+                            for (let x = 0; x < grid[y].length; x++) {
+                                const id = grid[y][x];
+                                if (id < 0) { continue; }
 
-                            const randomColor = goodColors1[id];
-                            canvasCtx.strokeStyle = randomColor;
-                            canvasCtx.lineWidth = 10;
+                                const randomColor = goodColors1[id];
+                                canvasCtx.strokeStyle = randomColor;
+                                canvasCtx.lineWidth = 10;
+                                canvasCtx.fillStyle = randomColor;
+                                canvasCtx.beginPath();
+                                // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
+                                const rectX = minX + (x * tileSize);
+                                const rectY = minY + (y * tileSize);
+                                const padding = 12;
+                                canvasCtx.rect(rectX + padding, rectY + padding, tileSize - padding, tileSize - padding);
+                                canvasCtx.stroke();
+                            }
+                        }
+
+                        const pairs = findAllPairs(grid);
+
+                        console.log(pairs);
+                        const pairToFindPath = pairs[6];
+                        console.log(`Find Path for: ${pairToFindPath}`);
+
+                        const pathablePairs = pairs.filter(pair => {
+                            return findPath(grid, pair[0], pair[1]) !== undefined;
+                        })
+
+
+                        // const result = findPath(grid, pairToFindPath[0], pairToFindPath[1]);
+                        console.log(pathablePairs);
+                        for (const pair of pathablePairs) {
+                            console.log(pair);
+                        }
+
+                        const solution = findSolution(grid);
+                        console.log(solution);
+
+                        for (let i = 0; i < solution.length; i++) {
+                            const step = solution[i];
+                            const [tile0x, tile0y] = step[0];
+                            const [tile1x, tile1y] = step[1];
+                            const tileId = step[2];
+
+                            const randomColor = goodColors1[tileId];
+                            canvasCtx.strokeStyle = "#000000";
+                            canvasCtx.lineWidth = 1;
                             canvasCtx.fillStyle = randomColor;
-                            canvasCtx.beginPath();
-                            // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
-                            const rectX = minX + (x * tileSize);
-                            const rectY = minY + (y * tileSize);
-                            const padding = 12;
-                            canvasCtx.rect(rectX + padding, rectY + padding, tileSize - padding, tileSize - padding);
-                            canvasCtx.stroke();
+                            canvasCtx.textBaseline = 'middle';
+                            canvasCtx.font = "bold 48px serif";
+                            const rect0X = minX + (tile0x * tileSize);
+                            const rect0Y = minY + (tile0y * tileSize);
+                            canvasCtx.fillText(`${(i + 1).toString().padStart(2, "0")}`, rect0X + (tileSize / 2), rect0Y + (tileSize / 2));
+                            canvasCtx.strokeText(`${(i + 1).toString().padStart(2, "0")}`, rect0X + (tileSize / 2), rect0Y + (tileSize / 2));
+
+                            const rect1X = minX + (tile1x * tileSize);
+                            const rect1Y = minY + (tile1y * tileSize);
+                            canvasCtx.fillText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
+                            canvasCtx.strokeText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
                         }
                     }
 
-                    const pairs = findAllPairs(grid);
-
-                    console.log(pairs);
-                    const pairToFindPath = pairs[6];
-                    console.log(`Find Path for: ${pairToFindPath}`);
-                    
-                    const pathablePairs = pairs.filter(pair => {
-                        return findPath(grid, pair[0], pair[1]) !== undefined;
-                    })
-
-
-                    // const result = findPath(grid, pairToFindPath[0], pairToFindPath[1]);
-                    console.log(pathablePairs);
-                    for (const pair of pathablePairs) {
-                        console.log(pair);
-                    }
-
-                    const solution = findSolution(grid);
-                    console.log(solution);
-
-                    for (let i = 0; i < solution.length; i++) {
-                        const step = solution[i];
-                        const [tile0x, tile0y] = step[0];
-                        const [tile1x, tile1y] = step[1];
-                        const tileId = step[2];
-
-                        const randomColor = goodColors1[tileId];
-                        canvasCtx.strokeStyle = "#000000";
-                        canvasCtx.lineWidth = 1;
-                        canvasCtx.fillStyle = randomColor;
-                        canvasCtx.textBaseline = 'middle';
-                        canvasCtx.font = "bold 48px serif";
-                        const rect0X = minX + (tile0x * tileSize);
-                        const rect0Y = minY + (tile0y * tileSize);
-                        canvasCtx.fillText(`${(i + 1).toString().padStart(2, "0")}`, rect0X + (tileSize / 2), rect0Y + (tileSize / 2));
-                        canvasCtx.strokeText(`${(i + 1).toString().padStart(2, "0")}`, rect0X + (tileSize / 2), rect0Y + (tileSize / 2));                    
-
-                        const rect1X = minX + (tile1x * tileSize);
-                        const rect1Y = minY + (tile1y * tileSize);
-                        canvasCtx.fillText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
-                        canvasCtx.strokeText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
-                    }
                 };
             }
         };
