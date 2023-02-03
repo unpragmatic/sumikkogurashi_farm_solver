@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Hello OpenCV.js</title>
+</head>
+
+<body>
+    <h2>Hello OpenCV.js</h2>
+    <p id="status">OpenCV.js is loading...</p>
+    <div>
+        <canvas id="canvasOutput"></canvas>
+        <div class="inputoutput">
+            <img id="imageSrc" alt="No Image" />
+            <div class="caption">imageSrc <input type="file" id="fileInput" name="file" /></div>
+
+            <img class="tile" id="tile000" src="tile000.png" />
+            <img class="tile" id="tile001" src="tile001.png" />
+            <img class="tile" id="tile002" src="tile002.png" />
+            <img class="tile" id="tile003" src="tile003.png" />
+            <img class="tile" id="tile004" src="tile004.png" />
+            <img class="tile" id="tile005" src="tile006.png" />
+            <img class="tile" id="tile006" src="tile022.png" />
+            <img class="tile" id="tile007" src="tile010.png" />
+            <img class="tile" id="tile008" src="tile012.png" />
+            <img class="tile" id="tile009" src="tile013.png" />
+            <img class="tile" id="tile010" src="tile024.png" />
+            <img class="tile" id="tile011" src="tile025.png" />
+            <img class="tile" id="tile012" src="tile031.png" />
+            <img class="tile" id="tile013" src="tile034.png" />
+            <img class="tile" id="tile014" src="tile019.png" />
+        </div>
+        <div class="inputoutput">
+            <div class="caption">canvasOutput</div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        const tileMats = [];
+
+        const main = () => {
+            const tileImgElements = document.getElementsByClassName("tile");
+            for (const tileImgElement of tileImgElements) {
+                if (tileImgElement.complete) {
+                    const mat = cv.imread(tileImgElement);
+                    tileMats.push(mat);
+                }
+                else {
+                    tileImgElement.onload = (e) => {
+                        const mat = cv.imread(tileImgElement);
+                        tileMats.push(mat);
+                    }
+                }
+                console.log(tileImgElement);
+            }
+        }
+
+        const processImaage = () => {
+            const mainImgMat = cv.imread(inputImgElement);
+            cv.imshow('canvasOutput', mainImgMat);
+            console.log(mainImgMat);
+
+            for (let tileId = 0; tileId < tileMats.length; tileId++) {
+                // console.log(`Matching `)
+                const tileMat = tileMats[tileId];
+                // for (const tileMat of [tileMats[0], tileMats[7], tileMats[15]]) {
+                // for (const tileMat of [tileMats[1]]) {
+                const dest = new cv.Mat();
+                const mask = new cv.Mat();
+
+                // cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_SQDIFF_NORMED, mask);
+                cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_CCOEFF_NORMED, mask);
+
+
+                const threshold = 0.01;
+                // console.log(dest);
+                // cv.imshow('canvasOutput', dest);
+
+                // const randomColor = `rgb(
+                //     ${Math.random() * 255},
+                //     ${Math.random() * 255},
+                //     ${Math.random() * 255}
+                // )`;
+                const randomColor = goodColors.pop();
+                canvasCtx.strokeStyle = randomColor;
+                canvasCtx.lineWidth = 10;
+                canvasCtx.fillStyle = randomColor;
+                // canvasCtx.globalAlpha = 0.5;
+
+                let max = 0;
+                const data = dest.data32F;
+                for (let x = 0; x < dest.cols; x++) {
+                    for (let y = 0; y < dest.rows; y++) {
+                        const idx = (y * dest.cols) + x;
+                        max = Math.max(max, idx);
+
+                        const value = data[idx];
+
+                        // if (value < threshold) {
+                        if (value > 0.9375) {
+                            const normalizedX = x;
+                            const normalizedY = y;
+                            matches.push([normalizedX, normalizedY, tileId]);
+
+                            // console.log([normalizedX, normalizedY, 0]);
+
+                            // canvasCtx.beginPath();
+                            // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
+                            // canvasCtx.rect(normalizedX + 12, normalizedY + 12 , 141 - 12, 141 - 12);
+                            // ca
+                            // canvasCtx.stroke();
+                        }
+                    }
+                }
+
+                console.log("MAX: ", max);
+
+            }
+
+
+
+            console.log(matches);
+            const minX = matches.map(([x, y, id]) => x).reduce((x, v) => Math.min(x, v));
+            const minY = matches.map(([x, y, id]) => y).reduce((y, v) => Math.min(y, v));
+            const maxX = matches.map(([x, y, id]) => x).reduce((x, v) => Math.max(x, v));
+            const maxY = matches.map(([x, y, id]) => y).reduce((y, v) => Math.max(y, v));
+            console.log([minX, minY]);
+            console.log([maxX, maxY]);
+
+            const tileSize = 141;
+            const gridWidth = Math.round((maxX - minX) / 141) + 1;
+            const gridHeight = Math.round((maxY - minY) / 141) + 1;
+            const grid = [];
+            for (let y = 0; y < gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < gridWidth; x++) {
+                    row.push([]);
+                }
+                grid.push(row);
+            }
+
+            for (const match of matches) {
+                const [x, y, id] = match;
+                const normalizedX = Math.round((x - minX) / tileSize);
+                const normalizedY = Math.round((y - minY) / tileSize);
+                grid[normalizedY][normalizedX].push(id);
+            }
+
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    const votes = grid[y][x];
+                    if (votes.length === 0) {
+                        grid[y][x] = -1;
+                        continue;
+                    }
+
+                    const frequencyMap = {}
+                    for (const vote of votes) {
+                        if (frequencyMap[vote] === undefined) { frequencyMap[vote] = 0; }
+                        frequencyMap[vote] += 1;
+                    }
+
+                    const [mostFrequentId, numberOfOccurances] = Object.entries(frequencyMap)
+                        .reduce(([mostFrequentId, largestNumberOfOccurances], [id, occurances]) => occurances > largestNumberOfOccurances ? [id, occurances] : [mostFrequentId, largestNumberOfOccurances]);
+
+                    grid[y][x] = Number.parseInt(mostFrequentId);
+                }
+            }
+
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    const id = grid[y][x];
+                    if (id < 0) { continue; }
+
+                    const randomColor = goodColors1[id];
+                    canvasCtx.strokeStyle = randomColor;
+                    canvasCtx.lineWidth = 10;
+                    canvasCtx.fillStyle = randomColor;
+                    canvasCtx.beginPath();
+                    // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
+                    const rectX = minX + (x * tileSize);
+                    const rectY = minY + (y * tileSize);
+                    const padding = 12;
+                    canvasCtx.rect(rectX + padding, rectY + padding, tileSize - padding, tileSize - padding);
+                    canvasCtx.stroke();
+                }
+            }
+
+            console.log(grid);
+            return grid;
+        }
+
+        const canvasElement = document.getElementById('canvasOutput');
+        const canvasCtx = canvasElement.getContext('2d');
+        const inputImgElement = document.getElementById('imageSrc');
+        const inputElement = document.getElementById('fileInput');
+
+        const goodColors1 = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
+        const goodColors = ["rgb(136,233,154)", "rgb(33,74,101)", "rgb(139,208,235)", "rgb(130,24,95)", "rgb(219,187,236)", "rgb(20,46,200)", "rgb(169,232,26)", "rgb(37,128,254)", "rgb(68,164,47)", "rgb(243,101,231)", "rgb(32,245,61)", "rgb(243,59,93)", "rgb(9,96,19)", "rgb(251,140,119)", "rgb(129,65,35)", "rgb(188,205,151)"];
+        const matches = [];
+
+
+        const emptyId = -1;
+        const boxId = 7;
+        function findAllPairs(grid) {
+            const pairs = [];
+            for (let startY = 0; startY < grid.length; startY++) {
+                for (let startX = 0; startX < grid[startY].length; startX++) {
+                    const startId = grid[startY][startX];
+                    if (startId === emptyId || startId === boxId) { continue; }
+
+                    for (let endY = startY; endY < grid.length; endY++) {
+                        let endX = startY === endY ? startX + 1 : 0;
+                        for (; endX < grid[endY].length; endX++) {
+                            const endId = grid[endY][endX];
+                            if (startId === endId) {
+                                pairs.push([
+                                    [startX, startY], [endX, endY], startId
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+            return pairs;
+        }
+
+        function findPath(grid, start, end) {
+            const bufferedGrid = [];
+            bufferedGrid.push([...new Array(grid[0].length + 2)].map(_ => -1))
+            for (let y = 0; y < grid.length; y++) {
+                bufferedGrid.push([-1, ... grid[y], -1]);
+            }
+            bufferedGrid.push([...new Array(grid[0].length + 2)].map(_ => -1))
+
+
+            // console.log(bufferedGrid);
+
+            const fixedStart = [start[0] + 1, start[1] + 1];
+            const fixedEnd   = [end[0] + 1  , end[1] + 1];
+            const path = [fixedStart];
+            const result = findPathHelper(bufferedGrid, fixedStart, fixedEnd, path, 0);
+
+            return result ? path : undefined;
+        }
+
+        function findPathHelper(grid, current, end, path, turnCount) {
+            // console.log(`PH ${current}`);
+            if (turnCount > 2) {
+                return false;
+            }
+            
+            const [currentX, currentY] = current;
+            const [endX, endY] = end;
+
+            // Handle finding target end point
+            if (currentX === endX && currentY === endY) {
+                return true;
+            }
+
+            // Handle collisions
+            const currentId = grid[currentY][currentX];
+            if (path.length > 1 && currentId !== -1) {
+                return false;
+            }
+            
+            
+            const deltas = [
+                [1, 0],
+                [-1, 0],
+                [0, 1],
+                [0, -1]
+            ]
+            for (const delta of deltas) {
+                let turning;
+                const previous = path.slice(-2, -1)[0];
+                if (previous === undefined) {
+                    turning = false;
+                } else {
+                    const currentDelta = [currentX - previous[0], currentY - previous[1]];
+                    turning = !(delta[0] === currentDelta[0] && delta[1] === currentDelta[1]);
+                }
+                
+                const newCurrent = [currentX + delta[0], currentY + delta[1]];
+                if (newCurrent[0] < 0 || newCurrent[0] >= grid[0].length) {
+                    continue;
+                }
+                if (newCurrent[1] < 0 || newCurrent[1] >= grid.length) {
+                    continue;
+                }
+
+                path.push(newCurrent);
+                if (findPathHelper(grid, newCurrent, end, path, turnCount + (turning ? 1 : 0))) {
+                    return true;
+                }
+                path.pop();
+            }
+            return false;
+        }
+
+
+        function createGridCopy(grid) {
+            return [...grid.map(row => [...row])];
+        }
+        
+        function gridIsSolved(grid) {
+            for (let y = 0; y < grid.length; y++) {
+                for (let x = 0; x < grid[y].length; x++) {
+                    const gridId = grid[y][x];
+                    if (gridId !== boxId && gridId !== emptyId) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function findSolution(grid) {
+            const matches = [];
+            const result = findSolutionHelper(grid, matches);
+            return matches;
+        }
+
+        function findSolutionHelper(grid, matches) {
+            if (gridIsSolved(grid)) {
+                return true;
+            }
+
+            const pairs = findAllPairs(grid);
+            // console.log(pairs);
+            
+            const matchablePairs = pairs.filter(pair => {
+                return findPath(grid, pair[0], pair[1]) !== undefined;
+            })
+
+            if (matchablePairs.length === 0) {
+                return false;
+            }
+
+            for (const pair of matchablePairs) {
+                const [tile0x, tile0y] = pair[0];
+                const [tile1x, tile1y] = pair[1];
+
+                const newGrid = createGridCopy(grid);
+                newGrid[tile0y][tile0x] = -1;
+                newGrid[tile1y][tile1x] = -1;
+
+                matches.push(pair);
+                if (findSolutionHelper(newGrid, matches)) {
+                    return true;
+                }
+                matches.pop();
+            }
+
+            return false;
+        }
+
+        inputElement.addEventListener('change', (e) => {
+            inputImgElement.src = URL.createObjectURL(e.target.files[0]);
+        }, false);
+
+        var Module = {
+            // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
+            onRuntimeInitialized() {
+                document.getElementById('status').innerHTML = 'OpenCV.js is ready.';
+                main();
+                // inputImgElement.src = "test_img.jpg";
+                inputImgElement.onload = function () {
+                    // const grid = processImaage();
+                    console.log("hey");
+                    const mainImgMat = cv.imread(inputImgElement);
+                    cv.imshow('canvasOutput', mainImgMat);
+
+                    // grid = [
+                    //     [
+                    //         0,
+                    //         1,
+                    //         2,
+                    //         3,
+                    //         4,
+                    //         2,
+                    //         5,
+                    //         -1,
+                    //         7,
+                    //         7,
+                    //         7
+                    //     ],
+                    //     [
+                    //         3,
+                    //         8,
+                    //         9,
+                    //         -1,
+                    //         7,
+                    //         8,
+                    //         0,
+                    //         2,
+                    //         14,
+                    //         9,
+                    //         5
+                    //     ],
+                    //     [
+                    //         6,
+                    //         9,
+                    //         10,
+                    //         11,
+                    //         -1,
+                    //         3,
+                    //         0,
+                    //         11,
+                    //         9,
+                    //         12,
+                    //         6
+                    //     ],
+                    //     [
+                    //         5,
+                    //         13,
+                    //         4,
+                    //         13,
+                    //         1,
+                    //         12,
+                    //         12,
+                    //         14,
+                    //         8,
+                    //         8,
+                    //         6
+                    //     ],
+                    //     [
+                    //         4,
+                    //         10,
+                    //         1,
+                    //         6,
+                    //         -1,
+                    //         7,
+                    //         12,
+                    //         2,
+                    //         0,
+                    //         13,
+                    //         14
+                    //     ],
+                    //     [
+                    //         11,
+                    //         4,
+                    //         1,
+                    //         10,
+                    //         -1,
+                    //         13,
+                    //         10,
+                    //         5,
+                    //         11,
+                    //         14,
+                    //         3
+                    //     ]
+                    // ]
+
+                    const grid = processImaage();
+
+                    const minX = 93;
+                    const minY = 343;
+                    const tileSize = 141;
+                    for (let y = 0; y < grid.length; y++) {
+                        for (let x = 0; x < grid[y].length; x++) {
+                            const id = grid[y][x];
+                            if (id < 0) { continue; }
+
+                            const randomColor = goodColors1[id];
+                            canvasCtx.strokeStyle = randomColor;
+                            canvasCtx.lineWidth = 10;
+                            canvasCtx.fillStyle = randomColor;
+                            canvasCtx.beginPath();
+                            // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
+                            const rectX = minX + (x * tileSize);
+                            const rectY = minY + (y * tileSize);
+                            const padding = 12;
+                            canvasCtx.rect(rectX + padding, rectY + padding, tileSize - padding, tileSize - padding);
+                            canvasCtx.stroke();
+                        }
+                    }
+
+                    const pairs = findAllPairs(grid);
+
+                    console.log(pairs);
+                    const pairToFindPath = pairs[6];
+                    console.log(`Find Path for: ${pairToFindPath}`);
+                    
+                    const pathablePairs = pairs.filter(pair => {
+                        return findPath(grid, pair[0], pair[1]) !== undefined;
+                    })
+
+
+                    // const result = findPath(grid, pairToFindPath[0], pairToFindPath[1]);
+                    console.log(pathablePairs);
+
+                    const solution = findSolution(grid);
+                    console.log(solution);
+
+                    for (let i = 0; i < solution.length; i++) {
+                        const step = solution[i];
+                        const [tile0x, tile0y] = step[0];
+                        const [tile1x, tile1y] = step[1];
+                        const tileId = step[2];
+
+                        const randomColor = goodColors1[tileId];
+                        canvasCtx.strokeStyle = "#000000";
+                        canvasCtx.lineWidth = 1;
+                        canvasCtx.fillStyle = randomColor;
+                        canvasCtx.textBaseline = 'middle';
+                        canvasCtx.font = "bold 48px serif";
+                        const rect0X = minX + (tile0x * tileSize);
+                        const rect0Y = minY + (tile0y * tileSize);
+                        canvasCtx.fillText(`${(i + 1).toString().padStart(2, "0")}`, rect0X + (tileSize / 2), rect0Y + (tileSize / 2));
+                        canvasCtx.strokeText(`${(i + 1).toString().padStart(2, "0")}`, rect0X + (tileSize / 2), rect0Y + (tileSize / 2));                    
+
+                        const rect1X = minX + (tile1x * tileSize);
+                        const rect1Y = minY + (tile1y * tileSize);
+                        canvasCtx.fillText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
+                        canvasCtx.strokeText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
+                    }
+                };
+            }
+        };
+    </script>
+    <script async src="opencv.js" type="text/javascript"></script>
+
+    <style>
+        /* canvas {
+            width: 500px;
+        } */
+    </style>
+</body>
+
+</html>
