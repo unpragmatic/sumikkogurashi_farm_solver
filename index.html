@@ -111,6 +111,10 @@
             cv.imshow('canvasOutput', mainImgMat);
             console.log(mainImgMat);
 
+            const canvasOutputElement = document.getElementById('canvasOutput');
+            const canvasOutputImageData = canvasOutputElement.getContext('2d').getImageData(0, 0, canvasOutputElement.width, canvasOutputElement.height);
+            const canvasOutputImageMat = cv.matFromArray(canvasOutputElement.height, canvasOutputElement.width, cv.CV_8UC4, canvasOutputImageData.data);
+
             for (let tileId = 0; tileId < tileMats.length; tileId++) {
                 // console.log(`Matching `)
                 const tileMat = tileMats[tileId];
@@ -118,12 +122,20 @@
                 // for (const tileMat of [tileMats[1]]) {
                 const dest = new cv.Mat();
 
+
                 const canvasMaskMat = cv.imread('canvasMask');
                 const mask = new cv.Mat();
                 cv.cvtColor(canvasMaskMat, mask, cv.COLOR_RGBA2GRAY);
                 // const mask = new cv.Mat();
 
-                cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_SQDIFF_NORMED, mask);
+                // console.log("Creating worker");
+                // const indexWorker = new Worker('indexWorker.js');
+                // console.log("Created worker");
+                // indexWorker.postMessage([canvasOutputImageMat.data, canvasOutputImageMat, dest, cv.TM_SQDIFF_NORMED, mask]);
+                // indexWorker.onmessage = (e) => {
+                //     console.log(e);
+                // };
+                cv.matchTemplate(canvasOutputImageMat, tileMat, dest, cv.TM_SQDIFF_NORMED, mask);
                 // cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_CCOEFF_NORMED, mask);
 
 
@@ -416,8 +428,8 @@
         function findSolution(grid) {
             // const matches = [];
             // const result = findSolutionHelper(grid, matches, new Set(), false);
-            
-            
+
+
             for (let i = 0; i < 5000; i++) {
                 const matches = [];
                 const solutionFound = findSolutionHelper(grid, matches, new Set(), true);
@@ -426,7 +438,7 @@
                     return matches;
                 }
             }
-            
+
         }
         let skipCount = 0;
         function findSolutionHelper(grid, matches, visited, onePass) {
@@ -477,13 +489,13 @@
             if (onePass) {
                 const randomIdx = Math.floor(Math.random() * scoredMatchablePairs.length);
                 const [pair, newGrid, score] = scoredMatchablePairs[randomIdx];
-                
+
                 matches.push(pair);
                 if (findSolutionHelper(newGrid, matches, visited, onePass)) {
-                        return true;
-                    }
+                    return true;
+                }
                 matches.pop();
-                
+
                 return false;
             } else {
                 for (const [pair, newGrid, score] of scoredMatchablePairs) {
@@ -599,12 +611,12 @@
                     const grid = processImaage();
 
                     sanityCheckGrid(grid);
-                    
+
                     const skipFindSolution = !document.getElementById('solverCheckbox').checked;
+                    const minX = 93;
+                    const minY = 343;
+                    const tileSize = 141;
                     if (!skipFindSolution) {
-                        const minX = 93;
-                        const minY = 343;
-                        const tileSize = 141;
                         for (let y = 0; y < grid.length; y++) {
                             for (let x = 0; x < grid[y].length; x++) {
                                 const id = grid[y][x];
@@ -666,8 +678,49 @@
                             canvasCtx.fillText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
                             canvasCtx.strokeText(`${(i + 1).toString().padStart(2, "0")}`, rect1X + (tileSize / 2), rect1Y + (tileSize / 2));
                         }
-                    }
 
+                        let clickCount = 0;
+                        canvasElement.addEventListener('click', () => {
+                            if (clickCount >= solution.length - 1) { return; };
+                            console.log("CLICKCOUNT:", clickCount);
+                            clickCount++;
+                        })
+
+                        window.solution = solution;
+                        setInterval(() => {
+                            // console.log("BLINKING");
+                            const currentStep = solution[clickCount];
+                            for ([x, y] of [currentStep[0], currentStep[1]]) {
+                                const randomColor = "#FFFFFF";
+                                canvasCtx.strokeStyle = randomColor;
+                                canvasCtx.lineWidth = 10;
+                                canvasCtx.fillStyle = randomColor;
+                                canvasCtx.beginPath();
+                                // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
+                                const rectX = minX + (x * tileSize);
+                                const rectY = minY + (y * tileSize);
+                                const padding = 12;
+                                canvasCtx.rect(rectX + padding, rectY + padding, tileSize - padding, tileSize - padding);
+                                canvasCtx.stroke();
+                            }
+
+                            setTimeout(() => {
+                                for ([x, y] of [currentStep[0], currentStep[1]]) {
+                                    const randomColor = "#000000";
+                                    canvasCtx.strokeStyle = randomColor;
+                                    canvasCtx.lineWidth = 10;
+                                    canvasCtx.fillStyle = randomColor;
+                                    canvasCtx.beginPath();
+                                    // canvasCtx.fillRect(normalizedX, normalizedY, 141, 141);
+                                    const rectX = minX + (x * tileSize);
+                                    const rectY = minY + (y * tileSize);
+                                    const padding = 12;
+                                    canvasCtx.rect(rectX + padding, rectY + padding, tileSize - padding, tileSize - padding);
+                                    canvasCtx.stroke();
+                                }
+                            }, 250);
+                        }, 500)
+                    }
                 };
             }
         };
