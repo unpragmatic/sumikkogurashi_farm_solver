@@ -10,7 +10,7 @@
     <h2>Hello OpenCV.js</h2>
     <p id="status">OpenCV.js is loading...</p>
     <div>
-        SOLVE: <input id="solverCheckbox" type="checkbox" checked/>
+        SOLVE: <input id="solverCheckbox" type="checkbox" checked />
         <canvas id="canvasOutput" style="width: 100%;"></canvas>
         <div class="inputoutput">
             <img id="imageSrc" alt="No Image" />
@@ -127,7 +127,7 @@
                 // cv.matchTemplate(mainImgMat, tileMat, dest, cv.TM_CCOEFF_NORMED, mask);
 
 
-                const threshold = 0.002;
+                const threshold = 0.003;
                 // console.log(dest);
                 // cv.imshow('canvasOutput', dest);
 
@@ -414,20 +414,39 @@
         }
 
         function findSolution(grid) {
-            const matches = [];
-            const result = findSolutionHelper(grid, matches);
-            return matches;
+            // const matches = [];
+            // const result = findSolutionHelper(grid, matches, new Set(), false);
+            
+            
+            for (let i = 0; i < 5000; i++) {
+                const matches = [];
+                const solutionFound = findSolutionHelper(grid, matches, new Set(), true);
+                if (solutionFound) {
+                    console.log(`Found solution on iteration ${i}`)
+                    return matches;
+                }
+            }
+            
         }
-
-        function findSolutionHelper(grid, matches) {
+        let skipCount = 0;
+        function findSolutionHelper(grid, matches, visited, onePass) {
             console.log(matches);
             if (gridIsSolved(grid)) {
                 return true;
             }
 
-            const pairs = findAllPairs(grid);
-            // console.log(pairs);
+            const matchedState = matches
+                .flatMap(([[tile0x, tile0y], [tile1x, tile1y], id]) => [(grid.length * tile0x) + tile0y, (grid.length * tile1x) + tile1y])
+            matchedState.sort((a, b) => a - b);
+            const matchStateString = JSON.stringify(matchedState)
+            if (visited.has(matchStateString)) {
+                skipCount += 1;
+                console.log(`Skipping ${skipCount} - ${matchStateString}`);
+                return false;
+            }
+            visited.add(matchStateString);
 
+            const pairs = findAllPairs(grid);
             const matchablePairs = pairs.filter(pair => {
                 return findPath(grid, pair[0], pair[1]) !== undefined;
             })
@@ -449,22 +468,35 @@
                         return findPath(grid, pair[0], pair[1]) !== undefined;
                     })
                     .length;
-                
+
                 return [pair, newGrid, score]
             });
 
             scoredMatchablePairs.sort((p1, p2) => p2[2] - p1[2]);
 
-            for (const [pair, newGrid, score] of scoredMatchablePairs) {
-
+            if (onePass) {
+                const randomIdx = Math.floor(Math.random() * scoredMatchablePairs.length);
+                const [pair, newGrid, score] = scoredMatchablePairs[randomIdx];
+                
                 matches.push(pair);
-                if (findSolutionHelper(newGrid, matches)) {
-                    return true;
-                }
+                if (findSolutionHelper(newGrid, matches, visited, onePass)) {
+                        return true;
+                    }
                 matches.pop();
-            }
+                
+                return false;
+            } else {
+                for (const [pair, newGrid, score] of scoredMatchablePairs) {
 
-            return false;
+                    matches.push(pair);
+                    if (findSolutionHelper(newGrid, matches, visited, onePass)) {
+                        return true;
+                    }
+                    matches.pop();
+                }
+
+                return false;
+            }
         }
 
         inputElement.addEventListener('change', (e) => {
@@ -567,6 +599,7 @@
                     const grid = processImaage();
 
                     sanityCheckGrid(grid);
+                    
                     const skipFindSolution = !document.getElementById('solverCheckbox').checked;
                     if (!skipFindSolution) {
                         const minX = 93;
