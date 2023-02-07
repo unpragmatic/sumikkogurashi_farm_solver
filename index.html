@@ -44,6 +44,12 @@
             <img class="tile" id="tile025" src="tile037c.png" />
             <img class="tile" id="tile026" src="tile046c.png" />
             <img class="tile" id="tile027" src="tile060c.png" />
+            <img class="tile" id="tile028" src="tile001f.png" />
+            <img class="tile" id="tile029" src="tile002d.png" />
+            <img class="tile" id="tile030" src="tile003d.png" />
+            <img class="tile" id="tile031" src="tile009d.png" />
+            <img class="tile" id="tile032" src="tile010f.png" />
+            <img class="tile" id="tile033" src="tile018e.png" />
         </div>
         <div class="inputoutput">
             <div class="caption">canvasOutput</div>
@@ -127,6 +133,9 @@
                 const mask = new cv.Mat();
                 cv.cvtColor(canvasMaskMat, mask, cv.COLOR_RGBA2GRAY);
                 // const mask = new cv.Mat();
+
+                console.log("MASKMAT");
+                console.log(mask);
 
                 // console.log("Creating worker");
                 // const indexWorker = new Worker('indexWorker.js');
@@ -511,8 +520,30 @@
             }
         }
 
+        let grid = undefined;
         inputElement.addEventListener('change', (e) => {
-            inputImgElement.src = URL.createObjectURL(e.target.files[0]);
+
+            const formData = new FormData();
+            formData.append("file", e.target.files[0]);
+            const url = "https://endpoint.callum.li"
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+                .then((response) => {
+                    return response.json();
+                })
+                .then((result) => {
+                    grid = result;
+                    console.log('Success:', result);
+                    inputImgElement.src = URL.createObjectURL(e.target.files[0]);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+
+            // inputImgElement.src = URL.createObjectURL(e.target.files[0]);
         }, false);
 
         var Module = {
@@ -608,8 +639,9 @@
                     //     ]
                     // ]
 
-                    const grid = processImaage();
-
+                    let a = 0;
+                    // const grid = processImaage();
+                    console.log(grid);
                     sanityCheckGrid(grid);
 
                     const skipFindSolution = !document.getElementById('solverCheckbox').checked;
